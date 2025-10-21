@@ -148,12 +148,26 @@ create table if not exists api_request_logs (
   created_at timestamptz default now()
 );
 
--- Storage Buckets (private)
--- Uses Supabase storage helper function
--- Use positional arguments and byte sizes for file_size_limit (BIGINT)
--- signature: storage.create_bucket(name text, public boolean, file_size_limit bigint default null, allowed_mime_types text[] default null)
-select storage.create_bucket('interview-recordings', false, 52428800, array['audio/mpeg','audio/webm','audio/ogg']);
-select storage.create_bucket('candidate-resumes', false, 20971520, array['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+-- Create buckets via direct insert for broader compatibility; idempotent with ON CONFLICT
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'interview-recordings',
+  'interview-recordings',
+  false,
+  52428800::bigint,
+  array['audio/mpeg','audio/webm','audio/ogg']::text[]
+)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'candidate-resumes',
+  'candidate-resumes',
+  false,
+  20971520::bigint,
+  array['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']::text[]
+)
+on conflict (id) do nothing;
 
 -- RLS
 alter table organizations enable row level security;
